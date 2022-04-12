@@ -22,6 +22,8 @@ Ticker ticker;
 
 int LED_BUILTIN = 2;  // LED on the board connected to GPIO2
 int BTN_BUILTIN = 3;  // BTN on GPIO3
+int SWITCHS[6] = {4, 5, 6, 7, 8, 10};  // GPIO SWITCH CHNs
+
 Adafruit_NeoPixel pixel = Adafruit_NeoPixel(1, LED_BUILTIN, ORDER); // one pixel, on pin referenced by LED_BUILTIN 
 
 // flashes this colour when connecting to wifi:
@@ -38,7 +40,7 @@ static uint32_t current_LED = current_colour;
 
 
 // broker connection information
-char broker[] = "192.168.1.120";
+char broker[] = "192.168.1.142";
 int port = 1884;
 char clientID[128];
 
@@ -47,12 +49,19 @@ char mac_string[20]; // mac address
 enum e_hole_state {OFF = 0, HOLE_RED=1, HOLE_BLUE=2}; 
 e_hole_state hole_state[6] = { OFF, OFF, OFF, OFF, OFF, OFF };
 
+int current_button_state = 0;
+
 void setup() {
   // put your setup code here, to run once:
 
   pinMode (LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
   pinMode (BTN_BUILTIN, INPUT_PULLUP);
+
+  for(int hole_id=1; hole_id<=6; hole_id++)
+  {
+    pinMode (SWITCHS[hole_id-1], INPUT_PULLUP);
+  }
     
   WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
   // it is a good practice to make sure your code sets wifi mode how you want it.
@@ -87,6 +96,13 @@ void setup() {
   // connecting to wifi colour
   set_colour(wifi_colour); 
   ticker.attach(1, tick);
+
+  // Uncomment and run it once, if you want to erase all the stored information
+  current_button_state = digitalRead(BTN_BUILTIN);
+  if (current_button_state == 0) {
+    Serial.println("BTN pressed during initialisation, clearing the wifi details");
+    wifiManager.resetSettings();
+  }
 
   // call us back when it's connected so we can reset the pixel
   wifiManager.setAPCallback(configModeCallback);
@@ -320,9 +336,9 @@ unsigned long time_last_heartbeat = millis();
 unsigned long time_now; 
 char heatbeat_topic_name[20]="switch/heartbeat";
 char heatbeat_payload[60];
-unsigned long next_btn_time =  millis(); 
-int current_button_state = 0;
-int previous_button_state = 0;
+unsigned long next_switch_time[6] =  {millis(), millis(), millis(), millis(), millis(), millis()}; 
+int current_switch_state = 0;
+int previous_switch_state[6] = {0, 0, 0, 0, 0, 0};
 int hold_off_button = 0;
 char btn_press_topic_name[20]="switch/1";
 char btn_press_payload[60];
@@ -347,28 +363,34 @@ void loop() {
     }
 
     // check for changes in the button state
-    if (time_now >  next_btn_time) {
-      current_button_state = digitalRead(BTN_BUILTIN);
-      if ((previous_button_state == 1) & (current_button_state == 0)) // button is pulled up and grounded when pressed
-      {
-        // button press detected
-        if (hole_state[0] == HOLE_RED) {
-          sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"red\"}" , time_now);
-          Serial.println("Heatbeat sent");
-        }
-        else if (hole_state[0] == HOLE_BLUE) {
-          sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"blue\"}" , time_now);
+    for(int hole_id=1; hole_id<=6; hole_id++)
+    {
+      if (time_now >  next_switch_time[hole_id-1]) {
+        current_switch_state = digitalRead(SWITCHS[hole_id-1]);
+        if ((previous_switch_state[hole_id-1] == 0) & (current_switch_state == 1)) // button is pulled up and grounded when pressed
+        {
+          // button press detected
+          Serial.print("button press");
+          Serial.println(hole_id);
+          
+          if (hole_state[hole_id-1] == HOLE_RED) {
+            sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"red\"}" , time_now);
+          }
+          else if (hole_state[hole_id-1] == HOLE_BLUE) {
+            sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"blue\"}" , time_now);
+          }
+          else {
+            sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"off\"}" , time_now);
+          }
+          sprintf(btn_press_topic_name, "switch/%d", hole_id);
+          client.publish(btn_press_topic_name, btn_press_payload); 
+          next_switch_time[hole_id-1] = time_now + 3000; // 3s hold off before next time
+          previous_switch_state[hole_id-1] = current_switch_state;
         }
         else {
-          sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"off\"}" , time_now);
+          next_switch_time[hole_id-1] = time_now + 100; // 100ms next time round the loop
+          previous_switch_state[hole_id-1] = current_switch_state;
         }
-        client.publish(btn_press_topic_name, btn_press_payload);
-        next_btn_time = time_now + 3000; // 3s hold off before next time
-        previous_button_state = current_button_state;
-      }
-      else {
-        next_btn_time = time_now + 100; // 100ms next time round the loop
-        previous_button_state = current_button_state;
       }
     }
 }

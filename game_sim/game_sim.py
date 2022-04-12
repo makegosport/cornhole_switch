@@ -80,7 +80,7 @@ class CornHoleGameSim:
 
             message_payload = message.payload.decode('utf-8')
 
-            print(message_payload)
+            print(f'{hole_id:d} : {message_payload}')
 
             return None
 
@@ -114,7 +114,7 @@ class CornHoleGameSim:
 parser = argparse.ArgumentParser(description='Python Code to generate a simulate the Cornhole game MQTT messages',
                                      epilog='See: https://github.com/krcb197/CheerLightTwitterAPI '
                                             'for more details')
-parser.add_argument('--mqtt_server', '-a', dest='mqtt_server', type=str, default='192.168.1.120',
+parser.add_argument('--mqtt_server', '-a', dest='mqtt_server', type=str, default='192.168.1.142',
                     help='address for the MQTT server')
 parser.add_argument('--mqtt_port', '-p', dest='mqtt_port', type=int, default=1884,
                     help='port for the MQTT server')
