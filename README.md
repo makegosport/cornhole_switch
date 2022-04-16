@@ -12,7 +12,8 @@ install them via the Ardunino library manager:
 - PubSubClient by Nick O`Leary (tested with version 2.8.0)
 
 # MQTT Server
-This project requires a MQTT server to be running. Currently the IP address and port are hardcoded
+This project requires a MQTT server to be running. The MQTT server is configured via the captive 
+portal that runs on the M5 Stamp. 
 
 # Game Simulator
 The Game Simulator is a python script that mocks the main game. The game simulate mocks the behaviour of the game by:

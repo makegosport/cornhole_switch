@@ -9,6 +9,7 @@
 #include <WiFiManager.h>          // https://github.com/tzapu/WiFiManager WiFi Configuration Magic
 #include <PubSubClient.h>         // https://github.com/plapointe6/EspMQTTClient and dependencies
 #include <Ticker.h>
+#include <Preferences.h>
 
 #include <Adafruit_NeoPixel.h> 
 // it seems GRB is the default
@@ -38,11 +39,18 @@ static uint32_t mqtt_colour = pixel.Color(0, 128, 128); // cyan
 static uint32_t current_colour = 0x000000; // black
 static uint32_t current_LED = current_colour;
 
-
 // broker connection information
-char broker[] = "192.168.1.142";
-int port = 1884;
+struct MQTTConf{
+  char ip_address[20];
+  int port;
+  unsigned int valid; // this should be set to 0xCAFEF00D when the confi is valid
+};
+char buffer[sizeof(MQTTConf)]; // prepare a buffer for the data
+MQTTConf *mqtt_conf = (MQTTConf *) buffer;
+WiFiManagerParameter wifi_manager_mqqt_server("mqtt_server", "MQTT Server IP Address", "192.168.1.120", 20);
+WiFiManagerParameter wifi_manager_port("mqtt_port", "MQTT Port", "1885", 6);
 char clientID[128];
+Preferences prefs;
 
 char mac_string[20]; // mac address
 
@@ -97,15 +105,41 @@ void setup() {
   set_colour(wifi_colour); 
   ticker.attach(1, tick);
 
+  // configure the EEPROM
+  prefs.begin("MQTT_Settings", false);
+
   // Uncomment and run it once, if you want to erase all the stored information
   current_button_state = digitalRead(BTN_BUILTIN);
   if (current_button_state == 0) {
     Serial.println("BTN pressed during initialisation, clearing the wifi details");
     wifiManager.resetSettings();
   }
+  else
+  {
+      size_t record_len = prefs.getBytesLength("MQTT_Settings");
+      Serial.print("prefs length:");
+      Serial.println(record_len);
+      prefs.getBytes("MQTT_Settings", buffer, sizeof(MQTTConf));
+      Serial.println("mqtt conf retrieved:");
+      Serial.print("ip address:");
+      Serial.println(mqtt_conf->ip_address);
+      Serial.print("port:");
+      Serial.println(mqtt_conf->port);
+      Serial.print("valid:");
+      Serial.println(mqtt_conf->valid);
+      // mqtt_conf is mapped onto buffer   
+      if (mqtt_conf->valid != 0xCAFEF00D) {
+        Serial.println("Invalid EEPROM content, clearin the WiFI details");
+        // for reconfiguration of the system
+        wifiManager.resetSettings();
+      }
+  }
 
   // call us back when it's connected so we can reset the pixel
   wifiManager.setAPCallback(configModeCallback);
+  wifiManager.addParameter(&wifi_manager_mqqt_server);
+  wifiManager.addParameter(&wifi_manager_port);
+  wifiManager.setSaveConfigCallback(saveConfigCallback);
 
   Serial.print("set the AP name it comes up as");
   // set the AP name it comes up as
@@ -121,11 +155,11 @@ void setup() {
   set_colour(0);
 
   Serial.print("connecting to broker: ");
-  Serial.print(broker);
+  Serial.print(mqtt_conf->ip_address);
   Serial.print(":");
-  Serial.println(port);
+  Serial.println(mqtt_conf->port);
 
-  client.setServer(broker, port);
+  client.setServer(mqtt_conf->ip_address, mqtt_conf->port);
   client.setCallback(mqtt_callback);
 
 
@@ -147,6 +181,42 @@ void configModeCallback (WiFiManager *myWiFiManager) {
   ticker.detach();
   set_colour(config_colour);
   ticker.attach(1, tick);
+}
+
+//callback notifying us of the need to save config
+void saveConfigCallback () {
+  char port_number_as_char_array[10];
+  size_t ret_code = 0;
+  Serial.print("mqtt server from wifimanager-----");
+  strcpy(mqtt_conf->ip_address, wifi_manager_mqqt_server.getValue());
+  strcpy(port_number_as_char_array, wifi_manager_port.getValue());
+  mqtt_conf->port = String(port_number_as_char_array).toInt();
+  mqtt_conf->valid = 0xCAFEF00D;
+  Serial.println("mqtt conf retrieved:");
+  Serial.print("ip address:");
+  Serial.println(mqtt_conf->ip_address);
+  Serial.print("port:");
+  Serial.println(mqtt_conf->port);
+  Serial.print("valid:");
+  Serial.println(mqtt_conf->valid);
+  ret_code = prefs.putBytes("MQTT_Settings", mqtt_conf, sizeof(MQTTConf)); 
+  Serial.print("putBytes ret code:");
+  Serial.println(ret_code);
+  prefs.end();
+
+  // check the readback
+  prefs.begin("MQTT_Settings", true);
+  char new_buffer[sizeof(MQTTConf)]; // prepare a buffer for the data
+  MQTTConf *new_mqtt_conf = (MQTTConf *) new_buffer;
+  prefs.getBytes("MQTT_Settings", new_buffer, sizeof(MQTTConf));
+  Serial.println("read_back mqtt conf retrieved:");
+  Serial.print("ip address:");
+  Serial.println(new_mqtt_conf->ip_address);
+  Serial.print("port:");
+  Serial.println(new_mqtt_conf->port);
+  Serial.print("valid:");
+  Serial.println(new_mqtt_conf->valid);
+  prefs.end();
 }
 
 void tick()
