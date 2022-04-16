@@ -6,8 +6,10 @@ This project uses the Ardunino development enviroment and was tested with 1.8.19
 configuration to use the [M5 Stamp C3](https://docs.m5stack.com/en/core/stamp_c3) using the following: <https://docs.m5stack.com/en/quick_start/stamp_pico/arduino>
 
 ## Dependent Libraries
-In order to compile this code, the following libraries must be installed:
-- TBA
+In order to compile this code, the following libraries must be installed. It is recommended to 
+install them via the Ardunino library manager:
+- WiFiManager by tablatronix (tested with version 2.0.10 beta)
+- PubSubClient by Nick O`Leary (tested with version 2.8.0)
 
 # MQTT Server
 This project requires a MQTT server to be running. Currently the IP address and port are hardcoded
