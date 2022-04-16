@@ -84,7 +84,8 @@ class CornHoleGameSim:
 
             message_payload = message.payload.decode('utf-8')
 
-            print(f'{hole_id:d} : {message_payload}')
+            self.__logger.debug(
+                f'{hole_id:d} : {message_payload}')
 
             return None
 
