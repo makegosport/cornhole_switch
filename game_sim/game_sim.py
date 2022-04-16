@@ -71,6 +71,10 @@ class CornHoleGameSim:
         self.__mqtt_client.publish(f'holes/{hole_id:d}',
                                    json.dumps({'state': state, 'colour': colour}))
 
+    def conf_switch_debounce(self, interval:int=50, hold_off:int=3000):
+        self.__mqtt_client.publish(f'switch/interval',interval, retain=True)
+        self.__mqtt_client.publish(f'switch/hold_off',hold_off, retain=True)
+
     def on_message(self, client, userdata, message):
         message_payload = message.payload.decode('utf-8')
 
@@ -167,6 +171,8 @@ if __name__ == "__main__":
     game_sim = CornHoleGameSim(mqtt_port=command_args.mqtt_port,
                                mqtt_server=command_args.mqtt_server)
     game_sim.connect()
+
+    game_sim.conf_switch_debounce(interval=150, hold_off=5000)
 
     while True:
         game_sim.update_hole(1, True, 'blue')

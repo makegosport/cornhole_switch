@@ -59,6 +59,10 @@ e_hole_state hole_state[6] = { OFF, OFF, OFF, OFF, OFF, OFF };
 
 int current_button_state = 0;
 
+unsigned long switch_polling_interval = 100;
+unsigned long switch_hold_off = 3000;
+
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -237,6 +241,32 @@ Call back for handling inbound MQTT messages
   
   Serial.print("Message arrived: ");
 
+  sprintf(expected_topic_str, "switch/interval");
+  Serial.print("checking message matched:");
+  Serial.println(expected_topic_str);
+  if (strcmp(topic, expected_topic_str) == 0) {
+    switch_polling_interval = message_payload.toInt();
+    Serial.print("updating switch_polling_interval to:");
+    Serial.println(switch_polling_interval);
+  }
+  else
+  {
+    Serial.println("no match");  
+  }
+
+  sprintf(expected_topic_str, "switch/hold_off");
+  Serial.print("checking message matched:");
+  Serial.println(expected_topic_str);
+  if (strcmp(topic, expected_topic_str) == 0) {
+    switch_hold_off = message_payload.toInt();
+    Serial.print("updating switch_hold_off to:");
+    Serial.println(switch_hold_off);
+  }
+  else
+  {
+    Serial.println("no match");  
+  }
+
   for(hole_id=1; hole_id<=6; hole_id++)
   {
     sprintf(expected_topic_str, "holes/%u", hole_id);
@@ -349,6 +379,11 @@ void reconnect() {
   Serial.println("subscribing to:'");
   char expected_topic_str[20];
   unsigned short hole_id;
+
+  sprintf(expected_topic_str, "switch/interval");
+  client.subscribe(expected_topic_str);
+  sprintf(expected_topic_str, "switch/hold_off");
+  client.subscribe(expected_topic_str);
   
   for(hole_id=1; hole_id<=6; hole_id++)
   {
@@ -454,11 +489,11 @@ void loop() {
           }
           sprintf(btn_press_topic_name, "switch/%d", hole_id);
           client.publish(btn_press_topic_name, btn_press_payload); 
-          next_switch_time[hole_id-1] = time_now + 3000; // 3s hold off before next time
+          next_switch_time[hole_id-1] = time_now + switch_hold_off; // hold off before next time
           previous_switch_state[hole_id-1] = current_switch_state;
         }
         else {
-          next_switch_time[hole_id-1] = time_now + 100; // 100ms next time round the loop
+          next_switch_time[hole_id-1] = time_now + switch_polling_interval; // next time round the loop
           previous_switch_state[hole_id-1] = current_switch_state;
         }
       }
