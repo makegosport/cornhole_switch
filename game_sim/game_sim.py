@@ -69,7 +69,7 @@ class CornHoleGameSim:
         :return:
         """
         self.__mqtt_client.publish(f'holes/{hole_id:d}',
-                                   json.dumps({'state': state, 'colour': colour}))
+                                   json.dumps({'status': state, 'colour': colour}))
 
     def conf_switch_debounce(self, interval:int=50, hold_off:int=3000):
         self.__mqtt_client.publish(f'switch/interval',interval, retain=True)

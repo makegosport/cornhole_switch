@@ -284,7 +284,7 @@ Call back for handling inbound MQTT messages
       String json_content = message_payload.substring(start_bracket+1,end_bracket);
       Serial.println(json_content);
 
-      if (json_content.indexOf("\"state\": true") != -1) {
+      if (json_content.indexOf("\"status\": true") != -1) {
         Serial.println("Hole On");
         if (json_content.indexOf("\"colour\": \"red\"") != -1) {
           set_colour(0xFF0000);  // red
@@ -358,13 +358,13 @@ Call back for handling inbound MQTT messages
         
       } // end of if hole state true
 
-      else if (json_content.indexOf("\"state\": false") != -1) {
+      else if (json_content.indexOf("\"status\": false") != -1) {
         Serial.println("Hole Off");
         set_colour(0); // clear pixel when connected (black)
         hole_state[hole_id-1] = HOLE_OFF;
       }
       else {
-           Serial.print("Unhandled state message:");  
+           Serial.print("Unhandled status message:");  
            Serial.println(json_content);
        }
       
