@@ -10,6 +10,7 @@ In order to compile this code, the following libraries must be installed. It is 
 install them via the Ardunino library manager:
 - WiFiManager by tablatronix (tested with version 2.0.10 beta)
 - PubSubClient by Nick O`Leary (tested with version 2.8.0)
+- Adafruit NeoPixel by adafruit (tested with version 1.10.4)
 
 # MQTT Server
 This project requires a MQTT server to be running. The MQTT server is configured via the captive 
