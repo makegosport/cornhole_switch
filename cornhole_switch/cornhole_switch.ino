@@ -54,8 +54,10 @@ Preferences prefs;
 
 char mac_string[20]; // mac address
 
-enum e_hole_state {OFF = 0, HOLE_RED=1, HOLE_BLUE=2}; 
-e_hole_state hole_state[6] = { OFF, OFF, OFF, OFF, OFF, OFF };
+enum e_hole_state {HOLE_OFF = 0, HOLE_RED=1, HOLE_BLUE=2, HOLE_GREEN=3, HOLE_CYAN=4, HOLE_WHITE=5, 
+                   HOLE_OLDLACE=6,HOLE_PURPLE=7, HOLE_MAGENTA=8, HOLE_YELLOW=9, HOLE_ORANGE=10,
+                   HOLE_PINK=11 }; 
+e_hole_state hole_state[6] = { HOLE_OFF, HOLE_OFF, HOLE_OFF, HOLE_OFF, HOLE_OFF, HOLE_OFF };
 
 int current_button_state = 0;
 
@@ -282,7 +284,7 @@ Call back for handling inbound MQTT messages
       String json_content = message_payload.substring(start_bracket+1,end_bracket);
       Serial.println(json_content);
 
-      if (json_content.indexOf("\"state\": true") != -1) {
+      if (json_content.indexOf("\"status\": true") != -1) {
         Serial.println("Hole On");
         if (json_content.indexOf("\"colour\": \"red\"") != -1) {
           set_colour(0xFF0000);  // red
@@ -290,19 +292,81 @@ Call back for handling inbound MQTT messages
           hole_state[hole_id-1] = HOLE_RED;
         }
 
-        if (json_content.indexOf("\"colour\": \"blue\"") != -1) {
-          set_colour(0x0000FF); // blue
-          Serial.println("Hole Blue");
-          hole_state[hole_id-1] = HOLE_BLUE;
-        }
-        
-      }
+        else if (json_content.indexOf("\"colour\": \"blue\"") != -1) {
+            set_colour(0x0000FF); // blue
+            Serial.println("Hole Blue");
+            hole_state[hole_id-1] = HOLE_BLUE;
+          }
 
-      if (json_content.indexOf("\"state\": false") != -1) {
+        else if (json_content.indexOf("\"colour\": \"green\"") != -1) {
+            set_colour(0x008000); // green
+            Serial.println("Hole Green");
+            hole_state[hole_id-1] = HOLE_GREEN;
+          }
+
+        else if (json_content.indexOf("\"colour\": \"cyan\"") != -1) {
+            set_colour(0x00FFFF); // cyan
+            Serial.println("Hole Cyan");
+            hole_state[hole_id-1] = HOLE_CYAN;
+          }
+
+         else if (json_content.indexOf("\"colour\": \"white\"") != -1) {
+            set_colour(0xFFFFFF); // white
+            Serial.println("Hole White");
+            hole_state[hole_id-1] = HOLE_WHITE;
+          }
+
+         else if (json_content.indexOf("\"colour\": \"oldlace\"") != -1) {
+            set_colour(0xFDF5E6); // oldlace
+            Serial.println("Hole Old Lace");
+            hole_state[hole_id-1] = HOLE_OLDLACE;
+          }
+
+         else if (json_content.indexOf("\"colour\": \"purple\"") != -1) {
+            set_colour(0x800080); // purple
+            Serial.println("Hole Purple");
+            hole_state[hole_id-1] = HOLE_PURPLE;
+          }
+
+        else if (json_content.indexOf("\"colour\": \"magenta\"") != -1) {
+            set_colour(0xFF00FF); // magenta
+            Serial.println("Hole Magenta");
+            hole_state[hole_id-1] = HOLE_MAGENTA;
+          }
+
+        else if (json_content.indexOf("\"colour\": \"yellow\"") != -1) {
+            set_colour(0xFFFF00); // yellow
+            Serial.println("Hole Yellow");
+            hole_state[hole_id-1] = HOLE_YELLOW;
+          }
+
+         else if (json_content.indexOf("\"colour\": \"orange\"") != -1) {
+            set_colour(0xFFA500); // orange
+            Serial.println("Hole Orange");
+            hole_state[hole_id-1] = HOLE_ORANGE;
+          }
+
+       else  if (json_content.indexOf("\"colour\": \"pink\"") != -1) {
+            set_colour(0xFFC0CB); // pink
+            Serial.println("Hole Pink");
+            hole_state[hole_id-1] = HOLE_PINK;
+          }
+       else {
+           Serial.print("Unhandled colour message:");  
+           Serial.println(json_content);
+       }
+        
+      } // end of if hole state true
+
+      else if (json_content.indexOf("\"status\": false") != -1) {
         Serial.println("Hole Off");
         set_colour(0); // clear pixel when connected (black)
-        hole_state[hole_id-1] = OFF;
+        hole_state[hole_id-1] = HOLE_OFF;
       }
+      else {
+           Serial.print("Unhandled status message:");  
+           Serial.println(json_content);
+       }
       
       
     }
@@ -484,8 +548,39 @@ void loop() {
           else if (hole_state[hole_id-1] == HOLE_BLUE) {
             sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"blue\"}" , time_now);
           }
-          else {
+          else if (hole_state[hole_id-1] == HOLE_GREEN) {
+            sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"green\"}" , time_now);
+          }
+          else if (hole_state[hole_id-1] == HOLE_CYAN) {
+            sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"cyan\"}" , time_now);
+          }
+          else if (hole_state[hole_id-1] == HOLE_WHITE) {
+            sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"white\"}" , time_now);
+          }
+          else if (hole_state[hole_id-1] == HOLE_OLDLACE) {
+            sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"oldlace\"}" , time_now);
+          }
+          else if (hole_state[hole_id-1] == HOLE_PURPLE) {
+            sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"purple\"}" , time_now);
+          }
+          else if (hole_state[hole_id-1] == HOLE_MAGENTA) {
+            sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"magenta\"}" , time_now);
+          }
+          else if (hole_state[hole_id-1] == HOLE_YELLOW) {
+            sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"yellow\"}" , time_now);
+          }
+          else if (hole_state[hole_id-1] == HOLE_ORANGE) {
+            sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"orange\"}" , time_now);
+          }
+          else if (hole_state[hole_id-1] == HOLE_PINK) {
+            sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"pink\"}" , time_now);
+          }
+          else if (hole_state[hole_id-1] == HOLE_OFF) {
             sprintf(btn_press_payload,"{\"time\":%u%, \"colour\": \"off\"}" , time_now);
+          }
+          else {
+            Serial.print("Unhandled hole_state:");
+            Serial.println(hole_state[hole_id-1]);
           }
           sprintf(btn_press_topic_name, "switch/%d", hole_id);
           client.publish(btn_press_topic_name, btn_press_payload); 
